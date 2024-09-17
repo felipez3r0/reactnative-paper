@@ -127,3 +127,154 @@ const styles = StyleSheet.create({
   },
 })
 ```
+
+## Implementando uma tela de login com useContext
+
+Vamos criar um contexto para armazenar o estado de autenticação do usuário. Nosso login será inicialmente feito com usuário e senha fixos.
+
+Depois vamos implementar o login com Firebase e usando nossa API.
+
+```tsx
+// context/auth.tsx
+import React, { createContext, useContext, useState } from 'react'
+import { router } from 'expo-router'
+
+interface IUser {
+  email: string
+  password: string
+}
+
+interface IAuthContext {
+  user: IUser
+  setUser: (user: IUser) => void
+  handleLogin: () => void
+}
+
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+const AuthContext = createContext<IAuthContext>({} as IAuthContext)
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<IUser>({email: '', password: ''})
+
+  function handleLogin() {
+    if(user && user.email === 'admin' && user.password === 'admin') {
+      router.push('home')
+    } else {
+      alert('Usuário ou senha inválidos')
+    }
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, handleLogin, setUser }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  return useContext(AuthContext)
+}
+```
+
+Precisamos adicionar o nosso Provider ao arquivo _layout.tsx.
+
+```tsx
+import { Slot } from "expo-router"
+import { PaperProvider } from "react-native-paper"
+import { AuthProvider } from "../context/auth"
+
+export default function Layout() {
+  return (
+      <PaperProvider>
+        <AuthProvider>
+          <Slot />
+        </AuthProvider>
+      </PaperProvider>
+  )
+}
+```
+
+Agora vamos ajustar o arquivo `app/index.tsx` para utilizar o contexto de autenticação.
+
+```tsx
+import { View, StyleSheet } from 'react-native'
+import { Button, TextInput } from 'react-native-paper'
+import { useAuth } from '../context/auth'
+
+export default function Login() {
+  const { user, handleLogin, setUser } = useAuth()
+
+  return (
+    <View style={styles.container}>
+      <TextInput label="Email" style={styles.mt20} onChangeText={text => setUser({...user, email: text})} />
+      <TextInput label="Senha" secureTextEntry={true} style={styles.mt20} onChangeText={text => setUser({...user, password: text})} />
+      <Button mode="contained" style={styles.mt20} onPress={handleLogin}>Entrar</Button>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  mt20: {
+    marginTop: 20,
+  },
+})
+```
+
+Agora podemos criar a rota `home` e a tela `Home` para redirecionar o usuário após o login.
+
+```tsx
+// app/home.tsx
+import { View, Text, StyleSheet } from 'react-native'
+
+export default function Home() {
+  return (
+    <View style={styles.container}>
+      <Text>Bem-vindo!</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  }
+})
+```
+
+Com o context podemos imprimir o email do usuário na tela de `Home`.
+
+```tsx
+import { View, Text, StyleSheet } from 'react-native'
+import { useAuth } from '../context/auth'
+
+export default function Home() {
+  const { user } = useAuth()
+
+  return (
+    <View style={styles.container}>
+      <Text>Bem-vindo, {user.email}!</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  }
+})
+```

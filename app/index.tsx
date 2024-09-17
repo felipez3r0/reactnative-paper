@@ -1,12 +1,15 @@
 import { View, StyleSheet } from 'react-native'
 import { Button, TextInput } from 'react-native-paper'
+import { useAuth } from '../context/auth'
 
 export default function Login() {
+  const { user, handleLogin, setUser } = useAuth()
+
   return (
     <View style={styles.container}>
-      <TextInput label="Email" style={styles.mt20} />
-      <TextInput label="Senha" secureTextEntry={true} style={styles.mt20} />
-      <Button mode="contained" style={styles.mt20}>Entrar</Button>
+      <TextInput label="Email" style={styles.mt20} onChangeText={text => setUser({...user, email: text})} />
+      <TextInput label="Senha" secureTextEntry={true} style={styles.mt20} onChangeText={text => setUser({...user, password: text})} />
+      <Button mode="contained" style={styles.mt20} onPress={handleLogin}>Entrar</Button>
     </View>
   )
 }
