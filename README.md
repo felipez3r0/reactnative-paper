@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
 })
 ```
 
-## Implementando uma tela de login com useContext
+## 4 - Implementando a tela de login com useContext
 
 Vamos criar um contexto para armazenar o estado de autenticação do usuário. Nosso login será inicialmente feito com usuário e senha fixos.
 
