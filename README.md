@@ -533,3 +533,129 @@ const styles = StyleSheet.create({
   },
 });
 ```
+
+### 7 - Conectando ao Firebase
+
+Vamos instalar o Firebase no projeto.
+
+```bash
+npx expo install firebase
+```
+
+Visite Firebase.com e crie uma conta. Quando fizer login, você poderá criar um projeto no Firebase Console. Em seguida faça login com sua conta do Google (ou crie uma conta)
+
+Depois crie um projeto no Firebase Console. Por último habilite o método de autenticação com e-mail e senha em Firebase Console  -> Criação ->  Authentication  ->  Sign-in method
+
+Vamos criar um arquivo `firebase.ts` na pasta `app/services` para configurar o Firebase.
+
+```tsx
+import { initializeApp } from 'firebase/app'
+
+const firebaseConfig = {
+  apiKey: "SUA_API",
+  authDomain: "SEU_DOMINIO",
+  projectId: "SEU_ID",
+  databaseURL: "SUA_URL",
+  storageBucket: "SEU_BUCKET",
+  messagingSenderId: "SEU_ID"
+}
+
+const firebaseApp = initializeApp(firebaseConfig)
+
+export default firebaseApp
+```
+
+Agora vamos ajustar nosso contexto de autenticação para utilizar o Firebase.
+
+```tsx
+...
+import firebaseApp from '../app/services/firebase'
+import { initializeAuth, signInWithEmailAndPassword } from 'firebase/auth'
+
+...
+  function handleLogin() {
+    if(!user || user.email === '' && user.password === '') {
+      alert('Usuário ou senha inválidos')
+    }
+
+    const auth = initializeAuth(firebaseApp)
+    signInWithEmailAndPassword(auth, user.email, user.password)
+      .then(() => {
+        router.push('Home')
+      })
+      .catch(() => {
+        alert('Usuário ou senha inválidos')
+      })
+  }
+```
+
+### 8 - Armazenando o token de autenticação (ou ID de usuário) no SecureStore
+
+Já temos o expo-secure-store instalado no projeto, agora vamos utilizá-lo para armazenar o token de autenticação ou o ID do usuário após o login.
+
+```tsx
+...
+import * as SecureStore from 'expo-secure-store'
+
+...
+  function handleLogin() {
+    if(!user || user.email === '' && user.password === '') {
+      alert('Usuário ou senha inválidos')
+    }
+
+    const auth = initializeAuth(firebaseApp)
+    signInWithEmailAndPassword(auth, user.email, user.password)
+      .then((userCredential) => {
+        SecureStore.setItemAsync('token', userCredential.user?.uid || '') // Aqui estamos guardando no SecureStore o ID do usuário que o Firebase retorna
+        router.push('Home')
+      })
+      .catch(() => {
+        alert('Usuário ou senha inválidos')
+      })
+  }
+```
+
+Podemos acessar essa informação depois na tela de Home por exemplo e essa informação poderia ser utilizada para fazer requisições para a API.
+
+```tsx
+import { View, Text, StyleSheet } from 'react-native'
+import { useAuth } from '../context/auth'
+import { Link } from 'expo-router'
+import * as SecureStore from 'expo-secure-store'
+import { useEffect, useState } from 'react'
+
+export default function Home() {
+  const { user } = useAuth()
+  const [token, setToken] = useState('') // Criamos um estado para armazenar o token
+
+  useEffect(() => {
+    async function getToken() {
+      const token = await SecureStore.getItemAsync('token') // Recuperamos o token do SecureStore
+      if(token) setToken(token)
+    }
+
+    getToken()
+  }, [])
+
+  return (
+    <View style={styles.container}>
+      <Text>Bem-vindo, {user.email}!</Text>
+      <Text>Token: {token}</Text>
+      <Link href="/sensors">Sensores</Link>
+      <Link href="/camera">Câmera</Link>
+      <Link href="/profile">Perfil</Link>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  }
+})
+```
+
+Os dados que ficam armazenados no SecureStore são acessíveis apenas para o próprio app e não são acessíveis para outros apps ou para o usuário. Esses dados são armazenados de forma segura no dispositivo.

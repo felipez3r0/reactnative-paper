@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import { router } from 'expo-router'
+import firebaseApp from '../app/services/firebase'
+import { initializeAuth, signInWithEmailAndPassword } from 'firebase/auth'
 
 interface IUser {
   email: string
@@ -22,11 +24,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<IUser>({email: '', password: ''})
 
   function handleLogin() {
-    if(user && user.email === 'admin' && user.password === 'admin') {
-      router.push('home')
-    } else {
+    if(!user || user.email === '' && user.password === '') {
       alert('Usuário ou senha inválidos')
     }
+
+    const auth = initializeAuth(firebaseApp)
+    signInWithEmailAndPassword(auth, user.email, user.password)
+      .then(() => {
+        router.push('Home')
+      })
+      .catch(() => {
+        alert('Usuário ou senha inválidos')
+      })
   }
 
   return (
