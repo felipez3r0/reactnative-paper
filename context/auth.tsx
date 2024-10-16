@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react'
 import { router } from 'expo-router'
 import firebaseApp from '../app/services/firebase'
 import { initializeAuth, signInWithEmailAndPassword } from 'firebase/auth'
+import * as SecureStore from 'expo-secure-store'
 
 interface IUser {
   email: string
@@ -30,8 +31,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const auth = initializeAuth(firebaseApp)
     signInWithEmailAndPassword(auth, user.email, user.password)
-      .then(() => {
-        router.push('Home')
+      .then((userCredential) => {
+        SecureStore.setItemAsync('token', userCredential.user?.uid || '')
+        router.push('/home')
       })
       .catch(() => {
         alert('Usuário ou senha inválidos')
